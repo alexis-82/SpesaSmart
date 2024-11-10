@@ -1,0 +1,1 @@
+/home/alessio/Downloads/SpesaSmart/android/app/build/intermediates/cxx/RelWithDebInfo/5fa605k1/obj/arm64-v8a
