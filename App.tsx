@@ -6,6 +6,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import UpdateChecker from './UpdateChecker';
+
 
 // Definizione dei tipi per la navigazione
 type RootStackParamList = {
@@ -234,45 +236,48 @@ const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation }) => {
 // App principale
 const App: React.FC = () => {
   return (
-    <NavigationContainer>
-      <Stack.Navigator 
-        initialRouteName="ShoppingList"
-        screenOptions={({ navigation }) => ({
-          headerTitleAlign: 'center',
-          headerStyle: {
-            backgroundColor: '#fff',
-          },
-          headerTitleStyle: {
-            fontWeight: 'bold',
-            fontSize: 20,
-          },
-          headerRight: () => (
-            <TouchableOpacity 
-              onPress={() => navigation.navigate('Info')}
-              style={{ marginRight: 15 }}
-            >
-              <Icon name="information-circle-outline" size={24} color="#007AFF" />
-            </TouchableOpacity>
-          ),
-        })}
-      >
-        <Stack.Screen 
-          name="ShoppingList" 
-          component={ShoppingListScreen} 
-          options={{ title: 'SpesaSmart' }}
-        />
-        <Stack.Screen 
-          name="Products" 
-          component={ProductsScreen} 
-          options={{ title: 'SpesaSmart' }}
-        />
-        <Stack.Screen 
-          name="Info" 
-          component={InfoScreen} 
-          options={{ title: 'Informazioni' }}
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <>
+      <UpdateChecker />
+      <NavigationContainer>
+        <Stack.Navigator 
+          initialRouteName="ShoppingList"
+          screenOptions={({ navigation }) => ({
+            headerTitleAlign: 'center',
+            headerStyle: {
+              backgroundColor: '#fff',
+            },
+            headerTitleStyle: {
+              fontWeight: 'bold',
+              fontSize: 20,
+            },
+            headerRight: () => (
+              <TouchableOpacity 
+                onPress={() => navigation.navigate('Info')}
+                style={{ marginRight: 15 }}
+              >
+                <Icon name="information-circle-outline" size={24} color="#007AFF" />
+              </TouchableOpacity>
+            ),
+          })}
+        >
+          <Stack.Screen 
+            name="ShoppingList" 
+            component={ShoppingListScreen} 
+            options={{ title: 'SpesaSmart' }}
+          />
+          <Stack.Screen 
+            name="Products" 
+            component={ProductsScreen} 
+            options={{ title: 'SpesaSmart' }}
+          />
+          <Stack.Screen 
+            name="Info" 
+            component={InfoScreen} 
+            options={{ title: 'Informazioni' }}
+          />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </>
   );
 };
 
@@ -307,7 +312,7 @@ const InfoScreen: React.FC = () => {
           <Text style={styles.text}>Sito web: www.alexis82.it</Text>
         </View>
 
-        <Text style={styles.version}>Versione 1.0.0</Text>
+        <Text style={styles.version}>Versione 1.2.0</Text>
       </View>
     </View>
   );
