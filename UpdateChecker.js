@@ -4,7 +4,9 @@ import { Alert, Linking, Platform } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 
 const UpdateChecker = () => {
-  const VERSION_CHECK_URL = 'https://www.alexis82.it/version.json';
+  const VERSION_CHECK_URL = __DEV__ 
+    ? 'https://www.alexis82.it/version.json?t=' + Date.now() // Aggiunge timestamp per dev
+    : 'https://www.alexis82.it/version.json';
   
   const compareVersions = (v1, v2) => {
     console.log(`Confronto versioni: ${v1} con ${v2}`);
@@ -25,9 +27,30 @@ const UpdateChecker = () => {
       console.log('Versione corrente app:', currentVersion);
       
       console.log('Fetching versione dal server...');
-      const response = await fetch(VERSION_CHECK_URL);
-      const versionInfo = await response.json();
-      console.log('Dati dal server:', JSON.stringify(versionInfo, null, 2));
+      console.log('URL richiesta:', VERSION_CHECK_URL);
+      const response = await fetch(VERSION_CHECK_URL, {
+        method: 'GET',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        cache: 'no-store'
+      });
+      
+      console.log('Headers risposta:', response.headers);
+      const responseText = await response.text();
+      console.log('Risposta grezza:', responseText);
+      
+      let versionInfo;
+      try {
+        versionInfo = JSON.parse(responseText);
+      } catch (e) {
+        console.error('Errore parsing JSON:', e);
+        return;
+      }
+      
+      console.log('Version dal server:', versionInfo.version);
+      console.log('Version corrente:', currentVersion);
       
       const comparison = compareVersions(versionInfo.version, currentVersion);
       console.log('Risultato confronto:', comparison);
@@ -58,11 +81,8 @@ const UpdateChecker = () => {
         console.log('Nessun aggiornamento disponibile');
       }
     } catch (error) {
-      console.error('Errore nel controllo aggiornamenti:', error);
-      // Log dettagliato dell'errore
-      if (error.response) {
-        console.error('Risposta server:', error.response);
-      }
+      console.error('Errore completo:', error);
+      console.error('Stack trace:', error.stack);
     }
   };
 

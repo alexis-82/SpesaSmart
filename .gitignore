@@ -144,6 +144,7 @@ android/.gradle/
 android/local.properties
 
 # iOS
+ios/
 ios/Pods/
 ios/build/
 ios/*.xcworkspace/
