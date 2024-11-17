@@ -157,3 +157,5 @@ ios/*.xcodeproj/xcuserdata/
 # Altri
 .DS_Store
 .env
+
+README.md

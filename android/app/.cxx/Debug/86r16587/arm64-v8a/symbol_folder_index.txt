@@ -1,1 +1,0 @@
-/home/alessio/Downloads/SpesaSmart/android/app/build/intermediates/cxx/Debug/86r16587/obj/arm64-v8a
