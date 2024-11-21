@@ -4,28 +4,50 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { View, Text, TouchableOpacity, TextInput, FlatList, StyleSheet, BackHandler } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RouteProp } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import UpdateChecker from './UpdateChecker';
 
+// Event emitter per la gestione degli eventi globali
+const EventEmitter = {
+  listeners: new Map(),
+  
+  addListener(event: string, callback: Function) {
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, new Set());
+    }
+    this.listeners.get(event).add(callback);
+    
+    return () => {
+      const eventListeners = this.listeners.get(event);
+      if (eventListeners) {
+        eventListeners.delete(callback);
+      }
+    };
+  },
+  
+  emit(event: string, data?: any) {
+    const eventListeners = this.listeners.get(event);
+    if (eventListeners) {
+      eventListeners.forEach((callback: (arg0: any) => any) => callback(data));
+    }
+  }
+};
 
 // Definizione dei tipi per la navigazione
 type RootStackParamList = {
-  ShoppingList: { newItem?: string } | undefined;
+  ShoppingList: undefined;
   Products: undefined;
   Info: undefined;
 };
 
 // Tipi per la navigazione di ShoppingListScreen
 type ShoppingListScreenNavigationProp = StackNavigationProp<RootStackParamList, 'ShoppingList'>;
-type ShoppingListScreenRouteProp = RouteProp<RootStackParamList, 'ShoppingList'>;
 
 // Tipi per la navigazione di ProductsScreen
 type ProductsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Products'>;
 
 type ShoppingListScreenProps = {
   navigation: ShoppingListScreenNavigationProp;
-  route: ShoppingListScreenRouteProp;
 };
 
 type ProductsScreenProps = {
@@ -35,20 +57,33 @@ type ProductsScreenProps = {
 const Stack = createStackNavigator<RootStackParamList>();
 
 // Schermata Lista della Spesa
-const ShoppingListScreen: React.FC<ShoppingListScreenProps> = ({ navigation, route }) => {
+const ShoppingListScreen: React.FC<ShoppingListScreenProps> = ({ navigation }) => {
   const [shoppingList, setShoppingList] = useState<string[]>([]);
 
   useEffect(() => {
     loadShoppingList();
+    
+    // Ascolta l'evento di nuovo prodotto
+    const unsubscribe = EventEmitter.addListener('newProduct', async (newItem: string) => {
+      if (newItem) {
+        await addItemToList(newItem);
+        // Forziamo un ricaricamento immediato della lista
+        await loadShoppingList();
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
-    if (route.params?.newItem) {
-      const newItem = route.params.newItem;
-      addItemToList(newItem);
-      navigation.setParams({ newItem: undefined });
-    }
-  }, [route.params?.newItem]);
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadShoppingList();
+    });
+  
+    return unsubscribe;
+  }, [navigation]);
 
   const loadShoppingList = async () => {
     try {
@@ -87,6 +122,8 @@ const ShoppingListScreen: React.FC<ShoppingListScreenProps> = ({ navigation, rou
         // Salviamo la lista aggiornata
         await AsyncStorage.setItem('shoppingList', JSON.stringify(currentList));
         console.log('Lista della spesa aggiornata:', currentList);
+        // Forziamo il ricaricamento della lista
+        await loadShoppingList();
       }
     } catch (error) {
       console.error('Errore nell\'aggiunta dell\'elemento:', error);
@@ -176,10 +213,13 @@ const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation }) => {
       const updatedProducts = [...products, newProduct.trim()].sort();
       setProducts(updatedProducts);
       await saveProducts(updatedProducts);
+      
+      // Emetti l'evento con il nuovo prodotto
+      EventEmitter.emit('newProduct', newProduct.trim());
       setNewProduct('');
-
-      // Navighiamo alla schermata della lista della spesa dopo aver aggiunto il prodotto
-      navigation.navigate('ShoppingList', { newItem: newProduct.trim() });
+      
+      // Torna alla schermata precedente
+      navigation.goBack();
     }
   };
 
@@ -212,7 +252,8 @@ const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation }) => {
           <TouchableOpacity 
             style={styles.listItem}
             onPress={() => {
-              navigation.navigate('ShoppingList', { newItem: item });
+              EventEmitter.emit('newProduct', item);
+              navigation.goBack();
             }}
           >
             <Text style={styles.itemText}>{item}</Text>
@@ -312,7 +353,7 @@ const InfoScreen: React.FC = () => {
           <Text style={styles.text}>Sito web: www.alexis82.it</Text>
         </View>
 
-        <Text style={styles.version}>Versione 1.2.0</Text>
+        <Text style={styles.version}>Versione 1.2.1</Text>
       </View>
     </View>
   );
