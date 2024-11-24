@@ -142,6 +142,7 @@ android/build/
 # Gradle
 android/.gradle/
 android/local.properties
+.gradle/
 
 # iOS
 ios/
