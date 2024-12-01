@@ -160,6 +160,7 @@ const ShoppingListScreen: React.FC<ShoppingListScreenProps> = ({ navigation }) =
             </View>
           )}
           keyExtractor={(_, index) => index.toString()}
+          contentContainerStyle={{ paddingBottom: 100 }}
         />
       )}
       <View style={styles.buttonContainer}>
@@ -353,7 +354,7 @@ const InfoScreen: React.FC = () => {
           <Text style={styles.text}>Sito web: www.alexis82.it</Text>
         </View>
 
-        <Text style={styles.version}>Versione 1.2.1</Text>
+        <Text style={styles.version}>Versione 1.2.2</Text>
       </View>
     </View>
   );
