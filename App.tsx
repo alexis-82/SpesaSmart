@@ -185,10 +185,23 @@ const ShoppingListScreen: React.FC<ShoppingListScreenProps> = ({ navigation }) =
 const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation }) => {
   const [products, setProducts] = useState<string[]>([]);
   const [newProduct, setNewProduct] = useState<string>('');
+  const [shoppingList, setShoppingList] = useState<string[]>([]);
 
   useEffect(() => {
     loadProducts();
+    loadShoppingList();
   }, []);
+
+  const loadShoppingList = async () => {
+    try {
+      const savedList = await AsyncStorage.getItem('shoppingList');
+      if (savedList) {
+        setShoppingList(JSON.parse(savedList));
+      }
+    } catch (error) {
+      console.error('Errore nel caricamento della lista della spesa:', error);
+    }
+  };
 
   const saveProducts = async (newProducts: string[]): Promise<void> => {
     try {
@@ -249,26 +262,34 @@ const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation }) => {
       </View>
       <FlatList
         data={products}
-        renderItem={({ item, index }) => (
-          <TouchableOpacity 
-            style={styles.listItem}
-            onPress={() => {
-              EventEmitter.emit('newProduct', item);
-              navigation.goBack();
-            }}
-          >
-            <Text style={styles.itemText}>{item}</Text>
+        renderItem={({ item, index }) => {
+          const isInList = shoppingList.includes(item);
+          return (
             <TouchableOpacity 
-              onPress={(e) => {
-                e.stopPropagation();
-                removeProduct(index);
+              style={[styles.listItem, isInList && styles.disabledItem]}
+              onPress={() => {
+                if (!isInList) {
+                  EventEmitter.emit('newProduct', item);
+                  navigation.goBack();
+                }
               }}
-              style={styles.deleteButton}
+              disabled={isInList}
             >
-              <Text style={styles.deleteButtonText}>X</Text>
+              <Text style={[styles.itemText, isInList && styles.disabledText]}>
+                {item} {isInList ? '(Già in lista)' : ''}
+              </Text>
+              <TouchableOpacity 
+                onPress={(e) => {
+                  e.stopPropagation();
+                  removeProduct(index);
+                }}
+                style={styles.deleteButton}
+              >
+                <Text style={styles.deleteButtonText}>X</Text>
+              </TouchableOpacity>
             </TouchableOpacity>
-          </TouchableOpacity>
-        )}
+          );
+        }}
         keyExtractor={(_, index) => index.toString()}
       />
     </View>
@@ -354,7 +375,7 @@ const InfoScreen: React.FC = () => {
           <Text style={styles.text}>Sito web: www.alexis82.it</Text>
         </View>
 
-        <Text style={styles.version}>Versione 1.2.2</Text>
+        <Text style={styles.version}>Versione 1.2.3</Text>
       </View>
     </View>
   );
@@ -483,6 +504,13 @@ const styles = StyleSheet.create({
   version: {
     marginTop: 20,
     fontSize: 14,
+    color: '#666',
+  },
+  disabledItem: {
+    opacity: 0.5,
+    backgroundColor: '#f0f0f0',
+  },
+  disabledText: {
     color: '#666',
   },
 });
