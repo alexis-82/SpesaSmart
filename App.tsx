@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createDrawerNavigator, DrawerNavigationProp } from '@react-navigation/drawer';
 import { View, Text, TouchableOpacity, TextInput, FlatList, StyleSheet, BackHandler } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { StackNavigationProp } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/Ionicons';
 import UpdateChecker from './UpdateChecker';
 import Sidebar from './components/Sidebar';
@@ -35,17 +34,19 @@ const EventEmitter = {
 };
 
 // Definizione dei tipi per la navigazione
-type RootStackParamList = {
+type RootDrawerParamList = {
   ShoppingList: undefined;
   Products: undefined;
   Info: undefined;
 };
 
+const Drawer = createDrawerNavigator<RootDrawerParamList>();
+
 // Tipi per la navigazione di ShoppingListScreen
-type ShoppingListScreenNavigationProp = StackNavigationProp<RootStackParamList, 'ShoppingList'>;
+type ShoppingListScreenNavigationProp = DrawerNavigationProp<RootDrawerParamList, 'ShoppingList'>;
 
 // Tipi per la navigazione di ProductsScreen
-type ProductsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Products'>;
+type ProductsScreenNavigationProp = DrawerNavigationProp<RootDrawerParamList, 'Products'>;
 
 type ShoppingListScreenProps = {
   navigation: ShoppingListScreenNavigationProp;
@@ -54,8 +55,6 @@ type ShoppingListScreenProps = {
 type ProductsScreenProps = {
   navigation: ProductsScreenNavigationProp;
 };
-
-const Stack = createStackNavigator<RootStackParamList>();
 
 // Schermata Lista della Spesa
 const ShoppingListScreen: React.FC<ShoppingListScreenProps> = ({ navigation }) => {
@@ -187,6 +186,14 @@ const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation }) => {
     loadShoppingList();
   }, []);
 
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadShoppingList();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
   const loadShoppingList = async () => {
     try {
       const savedList = await AsyncStorage.getItem('shoppingList');
@@ -292,65 +299,56 @@ const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation }) => {
 
 // App principale
 const App: React.FC = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
-
   return (
     <NavigationContainer>
-      <Stack.Navigator>
-        <Stack.Screen
+      <UpdateChecker />
+      <Drawer.Navigator
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: '#fff',
+          },
+          headerTintColor: '#000',
+          drawerStyle: {
+            backgroundColor: '#fff',
+            width: 240,
+          },
+          drawerType: 'front',
+        }}
+      >
+        <Drawer.Screen
           name="ShoppingList"
           component={ShoppingListScreen}
-          options={({ navigation }) => ({
-            headerTitle: '',
-            headerLeft: () => (
-              <TouchableOpacity
-                onPress={toggleSidebar}
-                style={{ marginLeft: 15 }}
-              >
-                <Icon name="menu" size={24} color="#000" />
-              </TouchableOpacity>
+          options={{
+            headerTitle: 'Lista della Spesa',
+            drawerLabel: 'Lista della Spesa',
+            drawerIcon: ({ color, size }) => (
+              <Icon name="list" size={size} color={color} />
             ),
-          })}
+          }}
         />
-        <Stack.Screen
+        <Drawer.Screen
           name="Products"
           component={ProductsScreen}
-          options={({ navigation }) => ({
-            headerTitle: '',
-            headerLeft: () => (
-              <TouchableOpacity
-                onPress={toggleSidebar}
-                style={{ marginLeft: 15 }}
-              >
-                <Icon name="menu" size={24} color="#000" />
-              </TouchableOpacity>
+          options={{
+            headerTitle: 'Prodotti',
+            drawerLabel: 'Prodotti',
+            drawerIcon: ({ color, size }) => (
+              <Icon name="basket" size={size} color={color} />
             ),
-          })}
+          }}
         />
-        <Stack.Screen
+        <Drawer.Screen
           name="Info"
           component={InfoScreen}
-          options={({ navigation }) => ({
-            headerTitle: '',
-            headerLeft: () => (
-              <TouchableOpacity
-                onPress={toggleSidebar}
-                style={{ marginLeft: 15 }}
-              >
-                <Icon name="menu" size={24} color="#000" />
-              </TouchableOpacity>
+          options={{
+            headerTitle: 'Info',
+            drawerLabel: 'Informazioni',
+            drawerIcon: ({ color, size }) => (
+              <Icon name="information-circle" size={size} color={color} />
             ),
-          })}
+          }}
         />
-      </Stack.Navigator>
-      <Sidebar
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-      />
+      </Drawer.Navigator>
     </NavigationContainer>
   );
 };
@@ -386,7 +384,7 @@ const InfoScreen: React.FC = () => {
           <Text style={styles.text}>Sito web: www.alexis82.it</Text>
         </View>
 
-        <Text style={styles.version}>Versione 1.3.0</Text>
+        <Text style={styles.version}>Versione 1.3.1</Text>
       </View>
     </View>
   );
