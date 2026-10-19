@@ -581,6 +581,8 @@ const InfoScreen: React.FC = () => {
             <Text style={styles.bulletPoint}>• Catalogo prodotti personalizzabile</Text>
             <Text style={styles.bulletPoint}>• Aggiunta rapida alla lista</Text>
             <Text style={styles.bulletPoint}>• Salvataggio automatico</Text>
+            <Text style={styles.bulletPoint}>• Backup e ripristino dei dati</Text>
+            <Text style={styles.bulletPoint}>• Mantieni schermo acceso</Text>
           </View>
         </View>
 
