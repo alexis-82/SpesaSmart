@@ -13,7 +13,7 @@ Versione attuale: **2.0.0**
 - **Salvataggio automatico:** lista e prodotti restano salvati anche quando chiudi l'app o spegni il telefono.
 - **Backup & Ripristino:** da *Impostazioni* esporti tutti i tuoi dati in un file e lo condividi dove vuoi (email, Drive, WhatsApp…). Con **Importa Backup** li ripristini, anche su un altro telefono.
 - **Mantieni schermo acceso:** da *Impostazioni* puoi impedire che lo schermo si spenga mentre usi l'app, comodo tra gli scaffali del supermercato.
-- **Avviso di aggiornamento:** quando esce una nuova versione, l'app te lo segnala e ti propone di scaricarla.
+- **Avviso di aggiornamento:** quando esce una nuova versione, l'app te lo segnala e ti propone di scaricarla. Le piccole correzioni arrivano invece da sole: l'app le scarica in background e le applica al riavvio successivo.
 
 Per spostarti tra le schermate tocca l'icona **☰** in alto a sinistra, oppure scorri il dito dal bordo sinistro dello schermo.
 
@@ -60,7 +60,7 @@ Questa procedura serve **solo una volta**: dalla 2.0.0 in poi gli aggiornamenti 
 
 ## Privacy
 
-Lista e prodotti sono salvati **solo sul tuo telefono**: non vengono inviati a nessun server. L'unico collegamento a Internet è la verifica della versione disponibile su www.alexis82.it. Il file di backup finisce solo dove decidi tu di condividerlo.
+Lista e prodotti sono salvati **solo sul tuo telefono**: non vengono inviati a nessun server. Gli unici collegamenti a Internet servono per gli aggiornamenti: la verifica della versione disponibile su www.alexis82.it e il download delle piccole correzioni dell'app dai server di Expo. Il file di backup finisce solo dove decidi tu di condividerlo.
 
 ## Domande frequenti
 

@@ -27,6 +27,12 @@
         "android.permission.VIBRATE"
       ]
     },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/88e18241-4d2e-47e5-b9d6-263c589fb35e"
+    },
     "extra": {
       "eas": {
         "projectId": "88e18241-4d2e-47e5-b9d6-263c589fb35e"

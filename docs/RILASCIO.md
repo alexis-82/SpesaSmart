@@ -79,8 +79,8 @@ L'UpdateChecker dell'app legge `https://www.alexis82.it/version.json` e, se trov
 Ad ogni rilascio:
 
 1. aggiorna `version` e `versionCode` in `app.json` e committa;
-2. `eas build -p android --profile preview`, poi scarica l'APK dal link mostrato da EAS;
-3. carica l'APK sul sito come **`spesasmart.apk`**, sostituendo il precedente;
+2. crea e pubblica il tag (`git tag v2.0.1 && git push origin v2.0.1`): la GitHub Action **Build APK** compila e allega `spesasmart-2.0.1.apk` alla Release `v2.0.1`. In alternativa, da terminale: `eas build -p android --profile preview`;
+3. carica l'APK sul sito come **`spesasmart.apk`** (rinominandolo), sostituendo il precedente;
 4. **solo dopo**, carica `version.json` con la nuova versione. Usa come modello `release/version.json`:
    ```json
    { "version": "2.0.0" }
@@ -96,3 +96,58 @@ Prima di pubblicare `version.json`, avvisa gli utenti, per esempio con una nota 
 > Per installare la versione 2.0.0 devi prima **disinstallare** SpesaSmart 1.3.1. La lista e i prodotti salvati andranno persi: annotali prima di disinstallare.
 
 Dalla 2.0.0 in poi gli aggiornamenti si installano normalmente, conservando i dati.
+
+## GitHub Actions
+
+Due workflow in `.github/workflows/`, entrambi basati su EAS.
+
+### Configurazione (una volta sola)
+
+1. Su [expo.dev](https://expo.dev) → *Account settings → Access tokens* crea un token (es. `github-actions`).
+2. Su GitHub → *Settings → Secrets and variables → Actions* aggiungi il secret **`EXPO_TOKEN`** con quel valore.
+3. La prima build `preview` va lanciata **da terminale** (`eas build -p android --profile preview`) per generare il keystore: le Action girano in modalità non interattiva e non possono crearlo.
+
+### Build APK (`build-apk.yml`)
+
+- Parte a ogni tag `v*` (es. `v2.0.1`) oppure a mano da *Actions → Build APK → Run workflow*.
+- Con un tag, controlla che corrisponda a `expo.version` in `app.json`.
+- Compila con il profilo `preview` sui server EAS e allega **`spesasmart-<versione>.apk`** alla GitHub Release `v<versione>` (creata se non esiste, altrimenti l'APK viene sostituito).
+
+## Aggiornamenti OTA (EAS Update)
+
+L'app contiene `expo-updates`: all'avvio controlla se c'è un aggiornamento sul canale `production`, lo scarica in background e lo applica **al successivo avvio**. Gli APK `preview` e `production` sono sul canale `production`; la development build su `development`.
+
+### Cosa si può aggiornare via OTA
+
+Solo **JavaScript e asset** (codice in `App.tsx`, `UpdateChecker.tsx`, `backup.ts`, testi, stili, immagini). Tutto il resto richiede un nuovo APK:
+
+- aggiunta, rimozione o aggiornamento di moduli nativi (`npx expo install …`);
+- aggiornamento della SDK di Expo o di React Native;
+- modifiche ad `app.json`: permessi, icona, nome, plugin, `versionCode`.
+
+### Compatibilità (`runtimeVersion` = `appVersion`)
+
+Un aggiornamento OTA arriva solo agli APK con la **stessa `version`** di `app.json`. Regola pratica: **se cambi qualcosa di nativo, alza `version` e `versionCode` e rilascia un nuovo APK**. Gli aggiornamenti successivi arriveranno solo a chi ha installato quell'APK.
+
+### Pubblicazione automatica (`eas-update.yml`)
+
+A ogni push su `main` il workflow:
+
+1. si **blocca** se il push modifica `package.json`, `app.json` o `eas.json` senza cambiare `version` (probabile modifica nativa: serve un nuovo APK). Se sei sicuro che la modifica sia solo JavaScript, lancia il workflow a mano da *Actions → Aggiornamento OTA → Run workflow*: il controllo viene saltato;
+2. esegue `tsc` e i test;
+3. pubblica con `eas update --channel production`, usando come messaggio la prima riga del commit.
+
+Da terminale, lo stesso aggiornamento si pubblica con:
+
+```bash
+eas update --channel production --platform android --environment production --message "descrizione"
+```
+
+### Annullare un aggiornamento sbagliato
+
+```bash
+eas update:list --branch production
+eas update:republish --group <id del gruppo precedente buono>
+```
+
+Gli utenti ricevono la versione ripubblicata al prossimo avvio e la vedono applicata a quello successivo.
