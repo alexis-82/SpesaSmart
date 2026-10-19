@@ -5,7 +5,9 @@
     "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "platforms": ["android"],
+    "platforms": [
+      "android"
+    ],
     "android": {
       "package": "com.spesasmart",
       "versionCode": 8,
@@ -18,6 +20,9 @@
       "eas": {
         "projectId": "88e18241-4d2e-47e5-b9d6-263c589fb35e"
       }
-    }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }

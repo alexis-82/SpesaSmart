@@ -1,7 +1,7 @@
 // UpdateChecker.js
 import React, { useEffect } from 'react';
 import { Alert, Linking, Platform } from 'react-native';
-import DeviceInfo from 'react-native-device-info';
+import * as Application from 'expo-application';
 
 const UpdateChecker = () => {
   const VERSION_CHECK_URL = __DEV__ 
@@ -23,7 +23,10 @@ const UpdateChecker = () => {
   const checkUpdate = async () => {
     try {
       console.log('Inizio controllo aggiornamenti...');
-      const currentVersion = DeviceInfo.getVersion();
+      const currentVersion = Application.nativeApplicationVersion;
+      if (!currentVersion) {
+        return;
+      }
       console.log('Versione corrente app:', currentVersion);
       
       console.log('Fetching versione dal server...');

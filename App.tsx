@@ -3,9 +3,10 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createDrawerNavigator, DrawerNavigationProp } from '@react-navigation/drawer';
 import { View, Text, TouchableOpacity, TextInput, FlatList, StyleSheet, BackHandler } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons as Icon } from '@expo/vector-icons';
 import UpdateChecker from './UpdateChecker';
 import Sidebar from './components/Sidebar';
+import * as Application from 'expo-application';
 
 // Event emitter per la gestione degli eventi globali
 const EventEmitter = {
@@ -384,7 +385,9 @@ const InfoScreen: React.FC = () => {
           <Text style={styles.text}>Sito web: www.alexis82.it</Text>
         </View>
 
-        <Text style={styles.version}>Versione 1.3.1</Text>
+        {Application.nativeApplicationVersion && (
+          <Text style={styles.version}>Versione {Application.nativeApplicationVersion}</Text>
+        )}
       </View>
     </View>
   );
