@@ -1,4 +1,23 @@
 {
-  "name": "SpesaSmart",
-  "displayName": "SpesaSmart"
+  "expo": {
+    "name": "SpesaSmart",
+    "slug": "spesasmart",
+    "version": "2.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "platforms": ["android"],
+    "android": {
+      "package": "com.spesasmart",
+      "versionCode": 8,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "88e18241-4d2e-47e5-b9d6-263c589fb35e"
+      }
+    }
+  }
 }
