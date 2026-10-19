@@ -41,6 +41,17 @@ eas credentials -p android
 
 Scegli il profilo, poi **Keystore → Download existing keystore**. Ottieni un file `.jks` e le relative password (store password, key alias, key password). Conservali **fuori dal repo**, ad esempio in un password manager. `.gitignore` esclude già `*.jks`, `*.keystore`, `*.p12`, `credentials.json` e `.env`.
 
+## Lock file e npm
+
+I server EAS e le GitHub Actions installano le dipendenze con `npm ci` e **npm 10**. npm 11 a volte non registra nel `package-lock.json` alcune dipendenze opzionali (es. `@emnapi/core`), e la build fallisce con `npm ci can only install packages when your package.json and package-lock.json are in sync`.
+
+Dopo ogni `npx expo install …` o modifica alle dipendenze, prima di committare:
+
+```bash
+npx -y npm@10 install --package-lock-only --ignore-scripts
+npx -y npm@10 ci --dry-run --ignore-scripts
+```
+
 ## Build locale senza EAS
 
 Requisiti: Android SDK (Android Studio) e JDK 17.
