@@ -171,3 +171,6 @@ ios/*.xcodeproj/xcuserdata/
 *.p12
 credentials.json
 .env
+
+# Backup esportati dall'app: contengono dati personali
+SpesaSmart_Backup_*.json

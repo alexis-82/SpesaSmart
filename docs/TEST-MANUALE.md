@@ -63,14 +63,32 @@ Per ogni voce, confronta con il comportamento della 1.3.1.
 ### Navigazione (drawer)
 - [ ] Apertura del menu con il pulsante ☰ in alto a sinistra.
 - [ ] Apertura del menu con uno swipe dal bordo sinistro.
-- [ ] Le 3 voci (Lista della Spesa, Prodotti, Informazioni) hanno le icone e portano alla schermata giusta.
+- [ ] Le 4 voci (Lista della Spesa, Prodotti, Impostazioni, Informazioni) hanno le icone e portano alla schermata giusta.
 - [ ] Il titolo in alto corrisponde alla schermata.
 
 ### Tasto indietro di Android
 L'app non gestisce il tasto indietro in modo personalizzato: valgono i comportamenti standard di React Navigation.
 - [ ] Con il menu aperto → il menu si chiude.
-- [ ] Da Prodotti o Info → si torna a Lista della Spesa.
+- [ ] Da Prodotti, Impostazioni o Info → si torna a Lista della Spesa.
 - [ ] Da Lista della Spesa → l'app va in background.
+
+### Impostazioni — Backup & Ripristino
+Il file di backup ha lo stesso formato della 1.4.0 (`version`, `timestamp`, `products`, `shoppingList`, `settings`). Per avere un file sul telefono: `adb push SpesaSmart_Backup_AAAA-MM-GG.json /sdcard/Download/` (da PowerShell, non da Git Bash).
+- [ ] **Esporta Backup** apre il menu Condividi con il file `SpesaSmart_Backup_AAAA-MM-GG.json`; salvandolo (Drive, email, *Salva in File*) il contenuto corrisponde ai dati dell'app.
+- [ ] **Importa Backup** → scegliere il file → compare la conferma con data, numero di prodotti ed elementi in lista.
+  - [ ] **Annulla** non cambia nulla.
+  - [ ] **Importa** sostituisce prodotti, lista e impostazione dello standby; compare "Backup importato".
+  - [ ] Tornando su Prodotti e Lista della Spesa si vedono subito i dati importati, senza riavviare l'app.
+- [ ] Import di un backup esportato dalla **1.4.0** → tutti i prodotti e la lista arrivano correttamente (anche nomi con accenti e apostrofi).
+- [ ] Import di un file che non è un backup (es. una foto o un `.txt`) → messaggio di errore, dati invariati.
+- [ ] Chiudere il selettore file senza scegliere nulla → nessun messaggio, dati invariati.
+- [ ] Esporta → Importa lo stesso file → i dati restano identici.
+
+### Impostazioni — Standby
+- [ ] Lo switch **Mantieni schermo acceso** è ben visibile sia spento (binario grigio) sia acceso (binario azzurro).
+- [ ] Acceso → lo schermo non si spegne oltre il timeout di sistema mentre l'app è aperta.
+- [ ] Spento → lo schermo si spegne normalmente.
+- [ ] L'impostazione resta dopo la chiusura completa e la riapertura dell'app.
 
 ### Info e versione
 - [ ] La schermata Info mostra **"Versione 2.0.0"** (development build o APK, non Expo Go).
@@ -124,3 +142,12 @@ Se il punto 6 passa, il formato dei dati è compatibile. Anche i futuri aggiorna
 4. Aggiungi dei dati, poi installa sopra una seconda build EAS (es. 2.0.1, `versionCode` 9) → i dati restano.
 
 Da comunicare agli utenti attuali: per passare alla 2.0.0 bisogna **disinstallare la 1.3.1** e annotarsi prima la lista.
+
+### 3. Dati dalla 1.4.0 (backup)
+
+La 1.4.0 usa un package diverso (`com.alexis82.spesasmart`): per Android è un'altra app, convive con la 2.0.0 e non può essere aggiornata. I dati passano solo tramite backup.
+
+1. Nella 1.4.0: *Impostazioni → Esporta Backup* e salva il file (es. in *Download* o su Drive).
+2. Nella 2.0.0: *Impostazioni → Importa Backup* e scegli quel file.
+3. Prodotti, lista e impostazione dello standby devono corrispondere a quelli della 1.4.0.
+4. Solo dopo aver verificato, la 1.4.0 si può disinstallare.
