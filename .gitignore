@@ -165,3 +165,10 @@ README.md
 /android
 /ios
 .expo/
+
+# Firma Android: keystore e credenziali non vanno mai committati
+*.jks
+*.keystore
+*.p12
+credentials.json
+.env

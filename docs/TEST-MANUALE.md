@@ -14,6 +14,26 @@ Checklist da eseguire dopo la migrazione a Expo, su **telefono fisico** e su **e
 > **Nota Expo Go:** `expo-application` restituisce la versione di *Expo Go*, non quella di SpesaSmart.
 > In Expo Go la schermata Info e l'UpdateChecker mostrano quindi un numero che non è "2.0.0": è normale.
 
+## Collegare il telefono con il debug USB
+
+### Sul PC (una volta sola)
+1. Installa **Android Studio**. Al primo avvio lascia installare l'SDK nel percorso predefinito (`C:\Users\Alessio\AppData\Local\Android\Sdk`, già impostato in `ANDROID_HOME`).
+2. In *SDK Manager → SDK Tools* verifica che siano installati **Android SDK Platform-Tools** e **Android SDK Build-Tools**.
+3. In un terminale nuovo, controlla che `adb version` risponda. La cartella `platform-tools` è già nel PATH.
+
+### Sul telefono
+1. *Impostazioni → Info sul telefono* → tocca **Numero build** 7 volte per attivare le *Opzioni sviluppatore*.
+2. *Opzioni sviluppatore* → attiva **Debug USB**.
+3. Collega il cavo USB e, se richiesto, scegli la modalità *Trasferimento file*.
+4. Sul telefono compare *"Consentire il debug USB?"* → spunta *Consenti sempre da questo computer* → **OK**.
+5. Sul PC, `adb devices` deve mostrare il dispositivo come `device`. Se compare `unauthorized`, sblocca il telefono e accetta il popup. Se non compare affatto, installa il driver USB del produttore (Samsung, Xiaomi…).
+
+### Avviare l'app sul telefono
+- **Development build locale** (consigliata): `npx expo run:android`. Compila, installa sul telefono collegato e avvia Metro; il collegamento via USB (`adb reverse`) è configurato in automatico.
+- **Expo Go**: `npx expo start` e scansiona il QR (telefono e PC sulla stessa rete Wi-Fi). Oppure via USB: `adb reverse tcp:8081 tcp:8081`, poi `npx expo start --localhost` e premi `a`.
+
+> La 1.3.1 è installata sul telefono? `npx expo run:android` installa una build di debug firmata con la stessa chiave della 1.3.1, quindi la installerebbe *sopra*, conservando i dati. Se vuoi tenere intatta la 1.3.1 per il test di migrazione, esegui quel test prima, oppure usa un emulatore.
+
 ## Checklist funzionale
 
 Per ogni voce, confronta con il comportamento della 1.3.1.
