@@ -1,0 +1,63 @@
+# Compila l'APK da pubblicare sul sito (profilo EAS "preview", firmato con il keystore EAS)
+# e lo allega alla GitHub Release v<versione> come spesasmart-<versione>.apk.
+name: Build APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Installa le dipendenze
+        run: npm ci
+
+      - name: Leggi la versione da app.json
+        id: version
+        run: |
+          VERSION=$(node -p "require('./app.json').expo.version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [ "$GITHUB_REF_TYPE" = "tag" ] && [ "$GITHUB_REF_NAME" != "v$VERSION" ]; then
+            echo "::error::Il tag $GITHUB_REF_NAME non corrisponde alla versione in app.json ($VERSION)"
+            exit 1
+          fi
+
+      - name: Build EAS (profilo preview)
+        run: eas build --platform android --profile preview --non-interactive --wait --json > build.json
+
+      - name: Scarica l'APK
+        run: |
+          APK_URL=$(node -p "require('./build.json')[0].artifacts.buildUrl")
+          curl -fsSL "$APK_URL" -o "spesasmart-${{ steps.version.outputs.version }}.apk"
+
+      - name: Pubblica la GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          APK="spesasmart-$VERSION.apk"
+          if gh release view "v$VERSION" > /dev/null 2>&1; then
+            gh release upload "v$VERSION" "$APK" --clobber
+          else
+            gh release create "v$VERSION" "$APK" --target "$GITHUB_SHA" \
+              --title "SpesaSmart $VERSION" \
+              --notes "APK da pubblicare su alexis82.it: rinominalo in spesasmart.apk (vedi docs/RILASCIO.md)."
+          fi

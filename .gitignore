@@ -160,4 +160,17 @@ ios/*.xcodeproj/xcuserdata/
 .DS_Store
 .env
 
-README.md
+# Expo / CNG: cartelle native rigenerate da `npx expo prebuild`
+/android
+/ios
+.expo/
+
+# Firma Android: keystore e credenziali non vanno mai committati
+*.jks
+*.keystore
+*.p12
+credentials.json
+.env
+
+# Backup esportati dall'app: contengono dati personali
+SpesaSmart_Backup_*.json

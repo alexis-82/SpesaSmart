@@ -7,7 +7,7 @@ import {
   Animated,
   Dimensions,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons as Icon } from '@expo/vector-icons';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 
 type RootStackParamList = {
@@ -33,7 +33,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     }).start();
   }, [isOpen]);
 
-  const menuItems = [
+  const menuItems: { name: string; route: string; icon: React.ComponentProps<typeof Icon>['name'] }[] = [
     { name: 'Lista della Spesa', route: 'ShoppingList', icon: 'list' },
     { name: 'Prodotti Disponibili', route: 'Products', icon: 'basket' },
     { name: 'Informazioni', route: 'Info', icon: 'information-circle' },

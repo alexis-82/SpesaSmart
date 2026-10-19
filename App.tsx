@@ -1,11 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createDrawerNavigator, DrawerNavigationProp } from '@react-navigation/drawer';
-import { View, Text, TouchableOpacity, TextInput, FlatList, StyleSheet, BackHandler } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, FlatList, StyleSheet, BackHandler, Switch, Alert, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons as Icon } from '@expo/vector-icons';
 import UpdateChecker from './UpdateChecker';
 import Sidebar from './components/Sidebar';
+import * as Application from 'expo-application';
+import * as DocumentPicker from 'expo-document-picker';
+import * as Sharing from 'expo-sharing';
+import { File, Paths } from 'expo-file-system';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
+import { buildBackup, parseBackup, backupFileName } from './backup';
+
+const KEEP_AWAKE_KEY = 'keepAwakeEnabled';
+const KEEP_AWAKE_TAG = 'SpesaSmart';
+
+// Attiva o disattiva il "mantieni schermo acceso" per tutta l'app
+const applyKeepAwake = async (enabled: boolean): Promise<void> => {
+  try {
+    if (enabled) {
+      await activateKeepAwakeAsync(KEEP_AWAKE_TAG);
+    } else {
+      await deactivateKeepAwake(KEEP_AWAKE_TAG);
+    }
+  } catch (error) {
+    console.error('Errore nella gestione dello standby:', error);
+  }
+};
+
+const loadKeepAwake = async (): Promise<boolean> => {
+  const saved = await AsyncStorage.getItem(KEEP_AWAKE_KEY);
+  return saved === 'true';
+};
 
 // Event emitter per la gestione degli eventi globali
 const EventEmitter = {
@@ -37,6 +64,7 @@ const EventEmitter = {
 type RootDrawerParamList = {
   ShoppingList: undefined;
   Products: undefined;
+  Settings: undefined;
   Info: undefined;
 };
 
@@ -184,6 +212,16 @@ const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation }) => {
   useEffect(() => {
     loadProducts();
     loadShoppingList();
+
+    // Dopo l'import di un backup ricarica prodotti e lista
+    const unsubscribe = EventEmitter.addListener('backupImported', () => {
+      loadProducts();
+      loadShoppingList();
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -299,6 +337,12 @@ const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation }) => {
 
 // App principale
 const App: React.FC = () => {
+  useEffect(() => {
+    loadKeepAwake()
+      .then(applyKeepAwake)
+      .catch(error => console.error('Errore nel caricamento dello standby:', error));
+  }, []);
+
   return (
     <NavigationContainer>
       <UpdateChecker />
@@ -338,6 +382,17 @@ const App: React.FC = () => {
           }}
         />
         <Drawer.Screen
+          name="Settings"
+          component={SettingsScreen}
+          options={{
+            headerTitle: 'Impostazioni',
+            drawerLabel: 'Impostazioni',
+            drawerIcon: ({ color, size }) => (
+              <Icon name="settings" size={size} color={color} />
+            ),
+          }}
+        />
+        <Drawer.Screen
           name="Info"
           component={InfoScreen}
           options={{
@@ -350,6 +405,157 @@ const App: React.FC = () => {
         />
       </Drawer.Navigator>
     </NavigationContainer>
+  );
+};
+
+// Schermata Impostazioni: backup e standby
+const SettingsScreen: React.FC = () => {
+  const [keepAwakeEnabled, setKeepAwakeEnabled] = useState<boolean>(false);
+
+  useEffect(() => {
+    loadKeepAwake()
+      .then(setKeepAwakeEnabled)
+      .catch(error => console.error('Errore nel caricamento dello standby:', error));
+  }, []);
+
+  const toggleKeepAwake = async (value: boolean): Promise<void> => {
+    setKeepAwakeEnabled(value);
+    await applyKeepAwake(value);
+    try {
+      await AsyncStorage.setItem(KEEP_AWAKE_KEY, JSON.stringify(value));
+    } catch (error) {
+      console.error('Errore nel salvataggio dello standby:', error);
+    }
+  };
+
+  const exportBackup = async (): Promise<void> => {
+    try {
+      const [savedProducts, savedList] = await Promise.all([
+        AsyncStorage.getItem('products'),
+        AsyncStorage.getItem('shoppingList'),
+      ]);
+      const now = new Date();
+      const backup = buildBackup(
+        Application.nativeApplicationVersion ?? '',
+        savedProducts ? JSON.parse(savedProducts) : [],
+        savedList ? JSON.parse(savedList) : [],
+        keepAwakeEnabled,
+        now,
+      );
+
+      const file = new File(Paths.cache, backupFileName(now));
+      if (file.exists) {
+        file.delete();
+      }
+      file.create();
+      await file.write(JSON.stringify(backup, null, 2));
+
+      if (!(await Sharing.isAvailableAsync())) {
+        Alert.alert('Esporta backup', 'La condivisione non è disponibile su questo dispositivo.');
+        return;
+      }
+      await Sharing.shareAsync(file.uri, {
+        mimeType: 'application/json',
+        dialogTitle: 'Esporta backup',
+      });
+    } catch (error) {
+      console.error('Errore nell\'esportazione del backup:', error);
+      Alert.alert('Esporta backup', 'Non è stato possibile esportare il backup.');
+    }
+  };
+
+  const restoreBackup = async (text: string): Promise<void> => {
+    try {
+      const backup = parseBackup(text);
+      await AsyncStorage.multiSet([
+        ['products', JSON.stringify(backup.products)],
+        ['shoppingList', JSON.stringify(backup.shoppingList)],
+        [KEEP_AWAKE_KEY, JSON.stringify(backup.settings.keepAwakeEnabled)],
+      ]);
+      setKeepAwakeEnabled(backup.settings.keepAwakeEnabled);
+      await applyKeepAwake(backup.settings.keepAwakeEnabled);
+      EventEmitter.emit('backupImported');
+      Alert.alert(
+        'Importa backup',
+        `Backup importato: ${backup.products.length} prodotti e ${backup.shoppingList.length} elementi nella lista.`,
+      );
+    } catch (error) {
+      console.error('Errore nell\'importazione del backup:', error);
+      Alert.alert('Importa backup', 'Non è stato possibile importare il backup.');
+    }
+  };
+
+  const importBackup = async (): Promise<void> => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: '*/*',
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled) {
+        return;
+      }
+
+      const text = await new File(result.assets[0].uri).text();
+      const backup = parseBackup(text);
+      const date = backup.settings.exportDate || backup.timestamp;
+
+      Alert.alert(
+        'Importa backup',
+        `Il backup${date ? ` del ${date}` : ''} contiene ${backup.products.length} prodotti e ` +
+          `${backup.shoppingList.length} elementi nella lista.\n\n` +
+          'I dati attuali verranno sostituiti. Continuare?',
+        [
+          { text: 'Annulla', style: 'cancel' },
+          { text: 'Importa', style: 'destructive', onPress: () => restoreBackup(text) },
+        ],
+      );
+    } catch (error) {
+      console.error('Errore nella lettura del backup:', error);
+      const message = error instanceof Error ? error.message : 'Il file non è leggibile.';
+      Alert.alert('Importa backup', message);
+    }
+  };
+
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+      <Text style={styles.title}>Impostazioni</Text>
+
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>📦 Backup & Ripristino</Text>
+        <Text style={styles.settingDescription}>
+          Salva e ripristina i tuoi dati tramite file JSON. Puoi condividere il backup via email,
+          cloud o qualsiasi app di condivisione.
+        </Text>
+        <TouchableOpacity style={styles.settingCard} onPress={exportBackup}>
+          <Icon name="download-outline" size={24} color="#007AFF" />
+          <Text style={styles.settingLabel}>Esporta Backup</Text>
+          <Icon name="chevron-forward" size={20} color="#007AFF" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.settingCard} onPress={importBackup}>
+          <Icon name="cloud-upload-outline" size={24} color="#007AFF" />
+          <Text style={styles.settingLabel}>Importa Backup</Text>
+          <Icon name="chevron-forward" size={20} color="#007AFF" />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>📱 Standby</Text>
+        <View style={styles.settingCard}>
+          <Icon name="phone-portrait-outline" size={24} color="#007AFF" />
+          <Text style={styles.settingLabel}>Mantieni schermo acceso</Text>
+          <Switch
+            value={keepAwakeEnabled}
+            onValueChange={toggleKeepAwake}
+            trackColor={{ false: '#767577', true: '#81b0ff' }}
+            thumbColor={keepAwakeEnabled ? '#007AFF' : '#f4f3f4'}
+            ios_backgroundColor="#767577"
+          />
+        </View>
+        <Text style={styles.settingHint}>
+          Impedisce al dispositivo di andare in standby mentre l'app è in uso
+        </Text>
+      </View>
+    </ScrollView>
   );
 };
 
@@ -375,6 +581,8 @@ const InfoScreen: React.FC = () => {
             <Text style={styles.bulletPoint}>• Catalogo prodotti personalizzabile</Text>
             <Text style={styles.bulletPoint}>• Aggiunta rapida alla lista</Text>
             <Text style={styles.bulletPoint}>• Salvataggio automatico</Text>
+            <Text style={styles.bulletPoint}>• Backup e ripristino dei dati</Text>
+            <Text style={styles.bulletPoint}>• Mantieni schermo acceso</Text>
           </View>
         </View>
 
@@ -384,7 +592,9 @@ const InfoScreen: React.FC = () => {
           <Text style={styles.text}>Sito web: www.alexis82.it</Text>
         </View>
 
-        <Text style={styles.version}>Versione 1.3.1</Text>
+        {Application.nativeApplicationVersion && (
+          <Text style={styles.version}>Versione {Application.nativeApplicationVersion}</Text>
+        )}
       </View>
     </View>
   );
@@ -521,6 +731,35 @@ const styles = StyleSheet.create({
   },
   disabledText: {
     color: '#666',
+  },
+  settingDescription: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: '#555',
+    textAlign: 'center',
+    marginBottom: 15,
+  },
+  settingCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 18,
+    backgroundColor: '#f8f8f8',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 10,
+    marginBottom: 12,
+  },
+  settingLabel: {
+    flex: 1,
+    fontSize: 18,
+    color: '#007AFF',
+    marginLeft: 15,
+  },
+  settingHint: {
+    fontSize: 15,
+    fontStyle: 'italic',
+    color: '#666',
+    paddingHorizontal: 10,
   },
 });
 
