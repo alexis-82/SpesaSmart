@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import UpdateChecker from './UpdateChecker';
 import OtaUpdater from './OtaUpdater';
+import { NavigationBar } from 'expo-navigation-bar';
 import Sidebar from './components/Sidebar';
 import * as Application from 'expo-application';
 import * as DocumentPicker from 'expo-document-picker';
@@ -363,6 +364,9 @@ const App: React.FC = () => {
     <NavigationContainer>
       <UpdateChecker />
       <OtaUpdater />
+      {/* Icone scure della barra di sistema: all'avvio React Native le imposta in base al tema
+          scuro del telefono, ignorando che l'app è sempre chiara (succede nelle build di release) */}
+      <NavigationBar style="dark" />
       <Drawer.Navigator
         screenOptions={{
           headerStyle: {
