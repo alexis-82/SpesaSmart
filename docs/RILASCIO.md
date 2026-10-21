@@ -83,24 +83,35 @@ $env:SPESASMART_KEY_PASS = "<key password>"
 
 Lo SHA-256 stampato da `verify` deve coincidere con quello mostrato da `eas credentials`.
 
-## Pubblicazione su alexis82.it
+## Rilascio di una nuova versione
 
-L'UpdateChecker dell'app legge `https://www.alexis82.it/version.json` e, se trova una versione più alta di quella installata, propone di scaricare `https://www.alexis82.it/spesasmart.apk`.
+Dalla 2.0.0 l'avviso di aggiornamento dell'app (`UpdateChecker.tsx`) legge il file
+[`spesasmart/check`](https://github.com/alexis-82/software-updates/blob/main/spesasmart/check) nel repo **alexis-82/software-updates** (solo il numero di versione, es. `2.0.1`). Se è più alta di quella installata, propone di scaricare l'APK dalla GitHub Release:
+`https://github.com/alexis-82/SpesaSmart/releases/download/v<versione>/spesasmart-<versione>.apk`.
 
-Ad ogni rilascio:
+Ad ogni rilascio basta:
 
-1. aggiorna `version` e `versionCode` in `app.json`, committa e porta la modifica su `main` (push o merge di una PR);
-2. la GitHub Action **Build APK** si accorge del cambio di versione, compila e crea da sola il tag e la Release `v2.0.1` con allegato `spesasmart-2.0.1.apk`. In alternativa, da terminale: `eas build -p android --profile preview`;
-3. carica l'APK sul sito come **`spesasmart.apk`** (rinominandolo), sostituendo il precedente;
-4. **solo dopo**, carica `version.json` con la nuova versione. Usa come modello `release/version.json`:
-   ```json
-   { "version": "2.0.0" }
-   ```
-   L'app legge solo il campo `version`. L'ordine conta: se pubblichi prima `version.json`, gli utenti scaricano ancora l'APK vecchio.
+1. aggiornare `version` e `versionCode` in `app.json`, committare e portare la modifica su `main` (push o merge di una PR).
+
+Il resto lo fa la GitHub Action **Build APK**, in quest'ordine:
+
+2. compila l'APK su EAS;
+3. crea il tag e la Release `v<versione>` con allegato `spesasmart-<versione>.apk`;
+4. **solo dopo**, aggiorna `spesasmart/check` in software-updates: da quel momento gli utenti vedono l'avviso. L'ordine evita che l'avviso punti a un APK non ancora pubblicato.
+
+Il file `check` non torna mai indietro di versione, anche ricompilando a mano una release vecchia.
 
 ### ⚠️ Rilascio 2.0.0: utenti della 1.3.1
 
-Pubblicando `version.json` con `2.0.0`, chi ha la 1.3.1 vedrà l'avviso "Aggiornamento Disponibile" e scaricherà la 2.0.0. **L'installazione sopra la 1.3.1 fallirà** ("App non installata"), perché la firma è cambiata (opzione B).
+La 1.3.1 legge ancora il vecchio indirizzo `https://www.alexis82.it/version.json` e scarica `https://www.alexis82.it/spesasmart.apk`. Per avvisarli **una volta sola**:
+
+1. carica sul sito l'APK 2.0.0 come **`spesasmart.apk`**;
+2. **solo dopo**, carica `version.json` (modello in `release/version.json`):
+   ```json
+   { "version": "2.0.0" }
+   ```
+
+Chi ha la 1.3.1 vedrà l'avviso e scaricherà la 2.0.0, ma **l'installazione sopra la 1.3.1 fallirà** ("App non installata"), perché la firma è cambiata (opzione B). Questi due file sul sito non vanno più aggiornati: dalla 2.0.0 l'app usa software-updates e le GitHub Release.
 
 Prima di pubblicare `version.json`, avvisa gli utenti, per esempio con una nota sulla pagina di download:
 
@@ -117,12 +128,14 @@ Due workflow in `.github/workflows/`, entrambi basati su EAS.
 1. Su [expo.dev](https://expo.dev) → *Account settings → Access tokens* crea un token (es. `github-actions`).
 2. Su GitHub → *Settings → Secrets and variables → Actions* aggiungi il secret **`EXPO_TOKEN`** con quel valore.
 3. La prima build `preview` va lanciata **da terminale** (`eas build -p android --profile preview`) per generare il keystore: le Action girano in modalità non interattiva e non possono crearlo.
+4. Per aggiornare `spesasmart/check` in software-updates serve il secret **`UPDATES_REPO_TOKEN`**: un *fine-grained personal access token* GitHub con accesso **solo** al repo `alexis-82/software-updates` e permesso **Contents: Read and write**. Si crea da [github.com/settings/personal-access-tokens/new](https://github.com/settings/personal-access-tokens/new); ha una scadenza, alla quale va rigenerato e reinserito.
 
 ### Build APK (`build-apk.yml`)
 
 - Parte **da sola** quando un push su `main` cambia `version` in `app.json`: crea anche il tag `v<versione>`. Se la versione non cambia, o la Release esiste già, non compila nulla.
 - Parte anche con un tag `v*` creato a mano (deve corrispondere a `version` in `app.json`) oppure da *Actions → Build APK → Run workflow*.
 - Compila con il profilo `preview` sui server EAS e allega **`spesasmart-<versione>.apk`** alla GitHub Release `v<versione>` (creata se non esiste, altrimenti l'APK viene sostituito).
+- Infine aggiorna `spesasmart/check` in software-updates (secret `UPDATES_REPO_TOKEN`). Se il secret manca, l'Action segnala l'errore dopo aver comunque creato la Release: in quel caso aggiorna il file a mano.
 
 ## Aggiornamenti OTA (EAS Update)
 

@@ -3,9 +3,19 @@ import { useEffect, useRef } from 'react';
 import { Alert, AppState, Linking, Platform } from 'react-native';
 import * as Application from 'expo-application';
 
-const VERSION_CHECK_URL = 'https://www.alexis82.it/version.json';
-const APK_URL = 'https://www.alexis82.it/spesasmart.apk';
+// File di testo con la sola versione pubblicata (es. "2.0.1"), aggiornato dalla GitHub Action "Build APK"
+const VERSION_CHECK_URL = 'https://raw.githubusercontent.com/alexis-82/software-updates/main/spesasmart/check';
 const FETCH_TIMEOUT_MS = 10000;
+
+// APK allegato alla GitHub Release della versione
+export const apkUrl = (version: string): string =>
+  `https://github.com/alexis-82/SpesaSmart/releases/download/v${version}/spesasmart-${version}.apk`;
+
+// Legge il contenuto del file check: restituisce la versione, o null se non è valida
+export const parseVersionCheck = (text: string): string | null => {
+  const version = text.trim();
+  return /^\d+(\.\d+)*$/.test(version) ? version : null;
+};
 
 const log = (...args: unknown[]) => {
   if (__DEV__) {
@@ -56,19 +66,24 @@ const UpdateChecker = () => {
         signal: controller.signal,
       });
 
-      const versionInfo: { version?: unknown } = JSON.parse(await response.text());
-      if (typeof versionInfo.version !== 'string') {
-        log('version.json senza campo "version" valido');
+      if (!response.ok) {
+        log(`file di versione non disponibile (HTTP ${response.status})`);
         return;
       }
 
-      log(`server ${versionInfo.version}, app ${currentVersion}`);
+      const latestVersion = parseVersionCheck(await response.text());
+      if (!latestVersion) {
+        log('file di versione senza una versione valida');
+        return;
+      }
 
-      if (compareVersions(versionInfo.version, currentVersion) > 0) {
+      log(`server ${latestVersion}, app ${currentVersion}`);
+
+      if (compareVersions(latestVersion, currentVersion) > 0) {
         alertVisible.current = true;
         Alert.alert(
           'Aggiornamento Disponibile',
-          `È disponibile la versione ${versionInfo.version} dell'app.\n\nLa tua versione attuale è ${currentVersion}.\n\nVuoi aggiornare ora?`,
+          `È disponibile la versione ${latestVersion} dell'app.\n\nLa tua versione attuale è ${currentVersion}.\n\nVuoi aggiornare ora?`,
           [
             {
               text: 'Non ora',
@@ -82,7 +97,7 @@ const UpdateChecker = () => {
               onPress: () => {
                 alertVisible.current = false;
                 if (Platform.OS === 'android') {
-                  Linking.openURL(APK_URL);
+                  Linking.openURL(apkUrl(latestVersion));
                 }
               },
             },
