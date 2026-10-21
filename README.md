@@ -9,11 +9,11 @@ Versione attuale: **2.0.0**
 ## Cosa puoi fare
 
 - **Lista della Spesa:** vedi cosa devi comprare e togli un prodotto con la **X** rossa quando lo hai preso.
-- **Prodotti:** crea il tuo elenco di prodotti abituali, in ordine alfabetico. Tocca un prodotto per metterlo nella lista; quelli già in lista appaiono in grigio con la scritta *"(Già in lista)"*.
+- **Prodotti:** crea il tuo elenco di prodotti abituali, in ordine alfabetico. Tocca un prodotto per metterlo nella lista; quelli già in lista appaiono in grigio con la scritta *"(Già in lista)"*. Il campo in alto cerca mentre scrivi (bastano poche lettere, anche senza accenti): se il prodotto non c'è, premi **Aggiungi** per crearlo.
 - **Salvataggio automatico:** lista e prodotti restano salvati anche quando chiudi l'app o spegni il telefono.
 - **Backup & Ripristino:** da *Impostazioni* esporti tutti i tuoi dati in un file e lo condividi dove vuoi (email, Drive, WhatsApp…). Con **Importa Backup** li ripristini, anche su un altro telefono.
 - **Mantieni schermo acceso:** da *Impostazioni* puoi impedire che lo schermo si spenga mentre usi l'app, comodo tra gli scaffali del supermercato.
-- **Avviso di aggiornamento:** quando esce una nuova versione, l'app te lo segnala e ti propone di scaricarla. Le piccole correzioni arrivano invece da sole: l'app le scarica in background e le applica al riavvio successivo.
+- **Avviso di aggiornamento:** quando esce una nuova versione, l'app te lo segnala e ti propone di scaricarla. Le piccole correzioni arrivano invece da sole: l'app le scarica in background e ti chiede se riavviarla subito per applicarle (oppure lo fa alla prossima apertura).
 
 Per spostarti tra le schermate tocca l'icona **☰** in alto a sinistra, oppure scorri il dito dal bordo sinistro dello schermo.
 
@@ -74,7 +74,7 @@ Sì: prima di importare l'app ti mostra cosa contiene il backup e chiede conferm
 L'app controlla quando la apri. Assicurati di essere connesso a Internet, chiudila e riaprila.
 
 **Come esco dall'app?**
-Dalla *Lista della Spesa* tocca il pulsante **Esci** in basso.
+Come per tutte le app Android: tasto **indietro** dalla *Lista della Spesa*, oppure chiudila dalle app recenti. I dati sono già salvati.
 
 ## Contatti
 

@@ -4,6 +4,7 @@
     "slug": "spesasmart",
     "version": "2.0.0",
     "orientation": "portrait",
+    "userInterfaceStyle": "light",
     "icon": "./assets/icon.png",
     "platforms": [
       "android"
@@ -41,6 +42,12 @@
     "plugins": [
       "expo-font",
       "expo-sharing",
+      [
+        "expo-navigation-bar",
+        {
+          "style": "dark"
+        }
+      ],
       [
         "expo-build-properties",
         {

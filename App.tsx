@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createDrawerNavigator, DrawerNavigationProp } from '@react-navigation/drawer';
-import { View, Text, TouchableOpacity, TextInput, FlatList, StyleSheet, BackHandler, Switch, Alert, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, FlatList, StyleSheet, Switch, Alert, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import UpdateChecker from './UpdateChecker';
+import OtaUpdater from './OtaUpdater';
 import Sidebar from './components/Sidebar';
 import * as Application from 'expo-application';
 import * as DocumentPicker from 'expo-document-picker';
@@ -12,6 +13,7 @@ import * as Sharing from 'expo-sharing';
 import { File, Paths } from 'expo-file-system';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { buildBackup, parseBackup, backupFileName } from './backup';
+import { filterProducts, productExists } from './search';
 
 const KEEP_AWAKE_KEY = 'keepAwakeEnabled';
 const KEEP_AWAKE_TAG = 'SpesaSmart';
@@ -164,10 +166,6 @@ const ShoppingListScreen: React.FC<ShoppingListScreenProps> = ({ navigation }) =
     saveShoppingList(newList);
   };
 
-  const handleExit = () => {
-    BackHandler.exitApp();
-  };
-
   return (
     <View style={styles.container}>
       <Text style={styles.title}>La mia Lista della Spesa</Text>
@@ -188,17 +186,9 @@ const ShoppingListScreen: React.FC<ShoppingListScreenProps> = ({ navigation }) =
             </View>
           )}
           keyExtractor={(_, index) => index.toString()}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          contentContainerStyle={{ paddingBottom: 20 }}
         />
       )}
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={[styles.button, { width: '100%' }]}
-          onPress={handleExit}
-        >
-          <Text style={styles.buttonText}>Esci</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 };
@@ -262,8 +252,13 @@ const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation }) => {
     }
   };
 
+  // Il campo serve sia a cercare sia ad aggiungere: filtra mentre si scrive
+  const filteredProducts = filterProducts(products, newProduct);
+  const isSearching = newProduct.trim().length > 0;
+  const canAdd = isSearching && !productExists(products, newProduct);
+
   const addProduct = async (): Promise<void> => {
-    if (newProduct.trim()) {
+    if (canAdd) {
       const updatedProducts = [...products, newProduct.trim()].sort();
       setProducts(updatedProducts);
       await saveProducts(updatedProducts);
@@ -285,22 +280,43 @@ const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation }) => {
     <View style={styles.container}>
       <Text style={styles.title}>Prodotti Disponibili</Text>
       <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          value={newProduct}
-          onChangeText={setNewProduct}
-          placeholder="Nuovo prodotto"
-        />
-        <TouchableOpacity 
-          style={styles.addButton}
+        <View style={styles.searchBox}>
+          <Icon name="search" size={20} color="#888" />
+          <TextInput
+            style={styles.searchInput}
+            value={newProduct}
+            onChangeText={setNewProduct}
+            onSubmitEditing={addProduct}
+            placeholder="Cerca o aggiungi un prodotto"
+            returnKeyType="done"
+          />
+          {isSearching && (
+            <TouchableOpacity onPress={() => setNewProduct('')} hitSlop={10}>
+              <Icon name="close-circle" size={20} color="#888" />
+            </TouchableOpacity>
+          )}
+        </View>
+        <TouchableOpacity
+          style={[styles.addButton, !canAdd && styles.addButtonDisabled]}
           onPress={addProduct}
+          disabled={!canAdd}
         >
           <Text style={styles.buttonText}>Aggiungi</Text>
         </TouchableOpacity>
       </View>
+      {isSearching && (
+        <Text style={styles.searchResult}>
+          {filteredProducts.length === 0
+            ? 'Nessun prodotto trovato: premi Aggiungi per crearlo'
+            : filteredProducts.length === 1
+              ? '1 prodotto trovato'
+              : `${filteredProducts.length} prodotti trovati`}
+        </Text>
+      )}
       <FlatList
-        data={products}
-        renderItem={({ item, index }) => {
+        data={filteredProducts}
+        keyboardShouldPersistTaps="handled"
+        renderItem={({ item: { item, index } }) => {
           const isInList = shoppingList.includes(item);
           return (
             <TouchableOpacity 
@@ -329,7 +345,7 @@ const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation }) => {
             </TouchableOpacity>
           );
         }}
-        keyExtractor={(_, index) => index.toString()}
+        keyExtractor={({ index }) => index.toString()}
       />
     </View>
   );
@@ -346,6 +362,7 @@ const App: React.FC = () => {
   return (
     <NavigationContainer>
       <UpdateChecker />
+      <OtaUpdater />
       <Drawer.Navigator
         screenOptions={{
           headerStyle: {
@@ -615,13 +632,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: 20,
   },
-  input: {
+  searchBox: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#ccc',
-    padding: 10,
+    paddingHorizontal: 10,
     marginRight: 10,
     borderRadius: 5,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+  },
+  searchResult: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: -10,
+    marginBottom: 10,
   },
   button: {
     backgroundColor: '#007AFF',
@@ -636,6 +666,9 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     justifyContent: 'center',
+  },
+  addButtonDisabled: {
+    backgroundColor: '#a0c4f0',
   },
   buttonText: {
     color: '#fff',
@@ -680,13 +713,6 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     width: '100%',
-    alignItems: 'center',
-  },
-  buttonContainer: {
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
     alignItems: 'center',
   },
   infoContainer: {

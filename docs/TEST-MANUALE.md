@@ -38,6 +38,17 @@ Checklist da eseguire dopo la migrazione a Expo, su **telefono fisico** e su **e
 
 Per ogni voce, confronta con il comportamento della 1.3.1.
 
+### Prodotti — Ricerca
+Il campo in alto serve sia a cercare sia ad aggiungere.
+- [ ] Scrivendo, l'elenco si filtra a ogni lettera; sotto il campo compare "N prodotti trovati".
+- [ ] La ricerca trova anche parti di parola ("moz" → Mozzarella) e ignora maiuscole e accenti ("caffe" → Caffè).
+- [ ] Nessun risultato → "Nessun prodotto trovato: premi Aggiungi per crearlo".
+- [ ] Se il nome scritto esiste già (anche con maiuscole o accenti diversi), **Aggiungi** è disattivato (azzurro chiaro).
+- [ ] La **X** grigia nel campo svuota la ricerca e torna l'elenco completo.
+- [ ] Con la tastiera aperta, un tocco su un risultato lo mette subito in lista.
+- [ ] La **X** rossa su un risultato filtrato elimina **quel** prodotto, non un altro.
+- [ ] Il tasto ✓ della tastiera equivale ad **Aggiungi**.
+
 ### Prodotti
 - [ ] Aggiungere un prodotto: scrivere un nome e premere **Aggiungi** → compare in elenco, in ordine alfabetico.
 - [ ] Un prodotto appena aggiunto finisce anche nella Lista della Spesa (comportamento attuale della 1.3.1).
@@ -52,7 +63,11 @@ Per ogni voce, confronta con il comportamento della 1.3.1.
 - [ ] Gli elementi aggiunti da Prodotti compaiono nella lista.
 - [ ] Rimuovere un elemento con **X** → sparisce; tornando in Prodotti, quel prodotto non è più grigio.
 - [ ] Lista vuota → testo "Nessun prodotto nella lista".
-- [ ] Il pulsante **Esci** chiude l'app.
+- [ ] Non c'è più il pulsante **Esci** in basso (rimosso nella 2.0.0).
+
+### Aspetto
+- [ ] Con il telefono in **tema scuro** di sistema, l'app resta chiara e i pulsanti della barra di navigazione (◀ ● ■) sono **scuri e ben visibili**.
+- [ ] Anche i popup (Importa backup, aggiornamento) e lo switch restano in tema chiaro.
 
 > L'app non ha una "spunta" degli elementi: si rimuovono con **X**.
 
@@ -108,6 +123,13 @@ Per provare la versione più alta **senza toccare il sito** (che leggono anche g
 2. `adb reverse tcp:8080 tcp:8080`;
 3. in `UpdateChecker.tsx` cambia **solo in locale** `VERSION_CHECK_URL` in `http://localhost:8080/version.json`. Non committare la modifica. In una release, Android blocca l'HTTP in chiaro: usa una development build;
 4. ripristina il file con `git checkout UpdateChecker.tsx`.
+
+### Aggiornamento OTA
+Solo con un APK `preview` (nella development build gli OTA sono disattivati). Pubblica una piccola modifica visibile, es. un testo, con `npx eas-cli update --channel production --platform android --environment production --message "test"`.
+- [ ] Riaprendo l'app (o tornandoci dopo averla messa in background) compare **"Aggiornamento pronto"**.
+- [ ] **Riavvia ora** → l'app si riavvia e mostra la modifica.
+- [ ] **Più tardi** → nessun cambiamento; alla prossima apertura completa la modifica è applicata e il popup non ricompare.
+- [ ] Senza connessione → nessun errore visibile.
 
 ## Test di migrazione dei dati
 
