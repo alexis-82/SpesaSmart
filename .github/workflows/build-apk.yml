@@ -1,5 +1,7 @@
-# Compila l'APK da pubblicare sul sito (profilo EAS "preview", firmato con il keystore EAS)
+# Compila l'APK da distribuire (profilo EAS "preview", firmato con il keystore EAS)
 # e lo allega alla GitHub Release v<versione> come spesasmart-<versione>.apk.
+#
+# Dopo la Release aggiorna spesasmart/check in alexis-82/software-updates (secret UPDATES_REPO_TOKEN).
 #
 # Parte da solo quando un push su main cambia "version" in app.json (crea anche il tag),
 # oppure con un tag v* creato a mano, oppure a mano da Actions → Build APK → Run workflow.
@@ -99,5 +101,35 @@ jobs:
             # Crea anche il tag v<versione> sul commit compilato
             gh release create "v$VERSION" "$APK" --target "$GITHUB_SHA" \
               --title "SpesaSmart $VERSION" \
-              --notes "APK da pubblicare su alexis82.it: rinominalo in spesasmart.apk (vedi docs/RILASCIO.md)."
+              --notes "Scarica spesasmart-$VERSION.apk e installalo sul telefono Android."
           fi
+
+      # Solo dopo la Release: l'app legge questo file e propone di scaricare l'APK appena pubblicato
+      - name: Aggiorna spesasmart/check in software-updates
+        if: steps.check.outputs.build == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.UPDATES_REPO_TOKEN }}
+          VERSION: ${{ steps.check.outputs.version }}
+          REPO: alexis-82/software-updates
+          FILE: spesasmart/check
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::Manca il secret UPDATES_REPO_TOKEN: aggiorna a mano $FILE in $REPO con $VERSION"
+            exit 1
+          fi
+          SHA=$(gh api "repos/$REPO/contents/$FILE" --jq .sha 2>/dev/null || true)
+          CURRENT=""
+          if [ -n "$SHA" ]; then
+            CURRENT=$(gh api "repos/$REPO/contents/$FILE" --jq .content | base64 -d | tr -d '[:space:]')
+          fi
+          # Non tornare mai indietro di versione (es. ricompilando a mano una release vecchia)
+          if [ -n "$CURRENT" ] && [ "$(printf '%s\n%s\n' "$CURRENT" "$VERSION" | sort -V | tail -n 1)" = "$CURRENT" ]; then
+            echo "$FILE contiene già $CURRENT: nessuna modifica."
+            exit 0
+          fi
+          ARGS=(-X PUT "repos/$REPO/contents/$FILE" -f message="SpesaSmart $VERSION" -f content="$(printf '%s' "$VERSION" | base64)")
+          if [ -n "$SHA" ]; then
+            ARGS+=(-f sha="$SHA")
+          fi
+          gh api "${ARGS[@]}" > /dev/null
+          echo "$FILE aggiornato: ${CURRENT:-nessuna} -> $VERSION"

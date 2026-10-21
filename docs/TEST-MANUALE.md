@@ -110,19 +110,21 @@ Il file di backup ha lo stesso formato della 1.4.0 (`version`, `timestamp`, `pro
 - [ ] Contatti e descrizione come nella 1.3.1.
 
 ### UpdateChecker
-`version.json` sul sito è letto all'avvio e a ogni ritorno dell'app in primo piano.
-- [ ] Con `version.json` **uguale** alla versione installata (`"2.0.0"`) → nessun avviso.
-- [ ] Con `version.json` **più alta** (es. `"2.0.1"`) → compare "Aggiornamento Disponibile".
+Il file `spesasmart/check` in [alexis-82/software-updates](https://github.com/alexis-82/software-updates) è letto all'avvio e a ogni ritorno dell'app in primo piano.
+- [ ] Con `check` **uguale** alla versione installata (`2.0.0`) → nessun avviso.
+- [ ] Con `check` **più alto** (es. `2.0.1`) → compare "Aggiornamento Disponibile".
   - [ ] **Non ora** chiude l'avviso.
-  - [ ] **Aggiorna** apre il download dell'APK nel browser.
+  - [ ] **Aggiorna** apre nel browser il download di `spesasmart-<versione>.apk` dalla GitHub Release.
   - [ ] Mettendo l'app in background e riaprendola, l'avviso ricompare una sola volta (non due sovrapposti).
 - [ ] Senza connessione → nessun errore visibile, l'app funziona normalmente.
 
-Per provare la versione più alta **senza toccare il sito** (che leggono anche gli utenti della 1.3.1):
-1. crea in una cartella qualsiasi un `version.json` con `{"version": "2.0.1"}` e servilo con `npx http-server -p 8080`;
+Per provare la versione più alta **senza toccare software-updates** (lo leggono gli utenti reali):
+1. crea in una cartella qualsiasi un file `check` che contiene solo `2.0.1` e servilo con `npx http-server -p 8080`;
 2. `adb reverse tcp:8080 tcp:8080`;
-3. in `UpdateChecker.tsx` cambia **solo in locale** `VERSION_CHECK_URL` in `http://localhost:8080/version.json`. Non committare la modifica. In una release, Android blocca l'HTTP in chiaro: usa una development build;
+3. in `UpdateChecker.tsx` cambia **solo in locale** `VERSION_CHECK_URL` in `http://localhost:8080/check`. Non committare la modifica. In una release, Android blocca l'HTTP in chiaro: usa una development build;
 4. ripristina il file con `git checkout UpdateChecker.tsx`.
+
+Con `2.0.1` il pulsante **Aggiorna** punta a una Release che non esiste ancora: è normale che il download fallisca. Per provare anche il download usa una versione già rilasciata più alta di quella installata.
 
 ### Aggiornamento OTA
 Solo con un APK `preview` (nella development build gli OTA sono disattivati). Pubblica una piccola modifica visibile, es. un testo, con `npx eas-cli update --channel production --platform android --environment production --message "test"`.

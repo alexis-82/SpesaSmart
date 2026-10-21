@@ -24,9 +24,9 @@ Per spostarti tra le schermate tocca l'icona **☰** in alto a sinistra, oppure 
 
 ## Installazione
 
-L'app non è sul Play Store: si scarica direttamente dal sito.
+L'app non è sul Play Store: si scarica direttamente da GitHub.
 
-1. Dal telefono, apri **[www.alexis82.it](https://www.alexis82.it)** e scarica il file **spesasmart.apk**.
+1. Dal telefono, apri la pagina dell'**[ultima versione](https://github.com/alexis-82/SpesaSmart/releases/latest)** e scarica il file **spesasmart-x.y.z.apk** (sezione *Assets*).
 2. Apri il file scaricato (dalla notifica del download o dalla cartella *Download*).
 3. Se Android lo chiede, consenti l'installazione di app da **origini sconosciute** per il browser che stai usando (di solito: *Impostazioni → Installa app sconosciute*).
 4. Tocca **Installa** e poi **Apri**.
@@ -60,7 +60,7 @@ Questa procedura serve **solo una volta**: dalla 2.0.0 in poi gli aggiornamenti 
 
 ## Privacy
 
-Lista e prodotti sono salvati **solo sul tuo telefono**: non vengono inviati a nessun server. Gli unici collegamenti a Internet servono per gli aggiornamenti: la verifica della versione disponibile su www.alexis82.it e il download delle piccole correzioni dell'app dai server di Expo. Il file di backup finisce solo dove decidi tu di condividerlo.
+Lista e prodotti sono salvati **solo sul tuo telefono**: non vengono inviati a nessun server. Gli unici collegamenti a Internet servono per gli aggiornamenti: la verifica della versione disponibile (un piccolo file su GitHub) e il download delle piccole correzioni dell'app dai server di Expo. Il file di backup finisce solo dove decidi tu di condividerlo.
 
 ## Domande frequenti
 
