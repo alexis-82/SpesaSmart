@@ -126,7 +126,7 @@ Due workflow in `.github/workflows/`, entrambi basati su EAS.
 
 ## Aggiornamenti OTA (EAS Update)
 
-L'app contiene `expo-updates`: all'avvio controlla se c'è un aggiornamento sul canale `production`, lo scarica in background e lo applica **al successivo avvio**. Gli APK `preview` e `production` sono sul canale `production`; la development build su `development`.
+L'app contiene `expo-updates`: all'avvio e a ogni ritorno in primo piano controlla se c'è un aggiornamento sul canale `production` e lo scarica in background. Quando è pronto, `OtaUpdater.tsx` mostra il popup **"Aggiornamento pronto"** con **Riavvia ora** (applica subito) e **Più tardi** (applica alla prossima apertura). Il popup compare una sola volta per ogni aggiornamento. Gli APK `preview` e `production` sono sul canale `production`; la development build su `development`.
 
 ### Cosa si può aggiornare via OTA
 
