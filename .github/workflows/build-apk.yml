@@ -1,9 +1,16 @@
 # Compila l'APK da pubblicare sul sito (profilo EAS "preview", firmato con il keystore EAS)
 # e lo allega alla GitHub Release v<versione> come spesasmart-<versione>.apk.
+#
+# Parte da solo quando un push su main cambia "version" in app.json (crea anche il tag),
+# oppure con un tag v* creato a mano, oppure a mano da Actions → Build APK → Run workflow.
 name: Build APK
 
 on:
   push:
+    branches:
+      - main
+    paths:
+      - app.json
     tags:
       - 'v*'
   workflow_dispatch:
@@ -16,47 +23,80 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: npm
+          fetch-depth: 0
 
-      - uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Installa le dipendenze
-        run: npm ci
-
-      - name: Leggi la versione da app.json
-        id: version
+      - name: Controlla se serve una nuova release
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BEFORE: ${{ github.event.before }}
         run: |
           VERSION=$(node -p "require('./app.json').expo.version")
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
           if [ "$GITHUB_REF_TYPE" = "tag" ] && [ "$GITHUB_REF_NAME" != "v$VERSION" ]; then
             echo "::error::Il tag $GITHUB_REF_NAME non corrisponde alla versione in app.json ($VERSION)"
             exit 1
           fi
 
+          # Su main si compila solo se la versione è cambiata e la release non esiste già
+          if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF_TYPE" = "branch" ]; then
+            OLD=""
+            if git cat-file -e "$BEFORE" 2>/dev/null; then
+              OLD=$(git show "$BEFORE:app.json" 2>/dev/null | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{console.log(JSON.parse(s).expo.version||'')}catch{console.log('')}})")
+            fi
+            if [ "$OLD" = "$VERSION" ]; then
+              echo "Versione invariata ($VERSION): nessuna nuova release."
+              echo "build=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            if gh release view "v$VERSION" > /dev/null 2>&1; then
+              echo "La release v$VERSION esiste già: nessuna nuova build."
+              echo "build=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "Nuova versione: ${OLD:-nessuna} -> $VERSION"
+          fi
+          echo "build=true" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.build == 'true'
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: expo/expo-github-action@v8
+        if: steps.check.outputs.build == 'true'
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Installa le dipendenze
+        if: steps.check.outputs.build == 'true'
+        run: npm ci
+
       - name: Build EAS (profilo preview)
+        if: steps.check.outputs.build == 'true'
         run: eas build --platform android --profile preview --non-interactive --wait --json > build.json
 
       - name: Scarica l'APK
+        if: steps.check.outputs.build == 'true'
         run: |
           APK_URL=$(node -p "require('./build.json')[0].artifacts.buildUrl")
-          curl -fsSL "$APK_URL" -o "spesasmart-${{ steps.version.outputs.version }}.apk"
+          curl -fsSL "$APK_URL" -o "spesasmart-${{ steps.check.outputs.version }}.apk"
 
       - name: Pubblica la GitHub Release
+        if: steps.check.outputs.build == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.version.outputs.version }}
+          VERSION: ${{ steps.check.outputs.version }}
         run: |
           APK="spesasmart-$VERSION.apk"
           if gh release view "v$VERSION" > /dev/null 2>&1; then
             gh release upload "v$VERSION" "$APK" --clobber
           else
+            # Crea anche il tag v<versione> sul commit compilato
             gh release create "v$VERSION" "$APK" --target "$GITHUB_SHA" \
               --title "SpesaSmart $VERSION" \
               --notes "APK da pubblicare su alexis82.it: rinominalo in spesasmart.apk (vedi docs/RILASCIO.md)."

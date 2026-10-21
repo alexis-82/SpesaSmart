@@ -89,8 +89,8 @@ L'UpdateChecker dell'app legge `https://www.alexis82.it/version.json` e, se trov
 
 Ad ogni rilascio:
 
-1. aggiorna `version` e `versionCode` in `app.json` e committa;
-2. crea e pubblica il tag (`git tag v2.0.1 && git push origin v2.0.1`): la GitHub Action **Build APK** compila e allega `spesasmart-2.0.1.apk` alla Release `v2.0.1`. In alternativa, da terminale: `eas build -p android --profile preview`;
+1. aggiorna `version` e `versionCode` in `app.json`, committa e porta la modifica su `main` (push o merge di una PR);
+2. la GitHub Action **Build APK** si accorge del cambio di versione, compila e crea da sola il tag e la Release `v2.0.1` con allegato `spesasmart-2.0.1.apk`. In alternativa, da terminale: `eas build -p android --profile preview`;
 3. carica l'APK sul sito come **`spesasmart.apk`** (rinominandolo), sostituendo il precedente;
 4. **solo dopo**, carica `version.json` con la nuova versione. Usa come modello `release/version.json`:
    ```json
@@ -120,8 +120,8 @@ Due workflow in `.github/workflows/`, entrambi basati su EAS.
 
 ### Build APK (`build-apk.yml`)
 
-- Parte a ogni tag `v*` (es. `v2.0.1`) oppure a mano da *Actions → Build APK → Run workflow*.
-- Con un tag, controlla che corrisponda a `expo.version` in `app.json`.
+- Parte **da sola** quando un push su `main` cambia `version` in `app.json`: crea anche il tag `v<versione>`. Se la versione non cambia, o la Release esiste già, non compila nulla.
+- Parte anche con un tag `v*` creato a mano (deve corrispondere a `version` in `app.json`) oppure da *Actions → Build APK → Run workflow*.
 - Compila con il profilo `preview` sui server EAS e allega **`spesasmart-<versione>.apk`** alla GitHub Release `v<versione>` (creata se non esiste, altrimenti l'APK viene sostituito).
 
 ## Aggiornamenti OTA (EAS Update)
